@@ -1,0 +1,48 @@
+{
+  "providers": {
+    "openrouter": {
+      "apiKey": ""
+    }
+  },
+  "embedding": {
+    "provider": "openrouter",
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "model": "nvidia/nemotron-3-embed-1b:free",
+    "apiKeyEnv": "OPENROUTER_API_KEY",
+    "promptProfile": "plain",
+    "timeoutMs": 120000,
+    "batchSize": 24,
+    "apiKey": ""
+  },
+  "intelligence": {
+    "enabled": true,
+    "provider": "openrouter",
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "apiKeyEnv": "OPENROUTER_API_KEY",
+    "timeoutMs": 90000,
+    "maxTranscriptChars": 45000,
+    "minTranscriptChars": 300,
+    "autoExtractOnCompaction": true,
+    "allowRemoteProcessing": true,
+    "apiKey": ""
+  },
+  "privacy": {
+    "redactCredentials": true,
+    "redactPrivateTags": true,
+    "_comment": "Best-effort redaction; do not send secrets to remote providers."
+  },
+  "deduplication": {
+    "enabled": true,
+    "similarityThreshold": 0.92,
+    "_comment": "Semantic deduplication requires vector similarity and preserves provenance."
+  },
+  "recall": {
+    "enabled": true,
+    "mode": "relevant",
+    "maxMemories": 6,
+    "maxContextChars": 10000,
+    "cacheMs": 15000,
+    "includeRecentFallback": true
+  }
+}

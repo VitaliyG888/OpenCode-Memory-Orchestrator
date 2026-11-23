@@ -1,0 +1,31 @@
+# Secrets and runtime configuration
+.env
+.env.*
+!.env.example
+.opencode/memory.config.json
+.opencode/orchestrator.config.json
+**/secrets.json
+
+# Local memory databases and runtime state
+.orchestrator/
+**/*.sqlite
+**/*.sqlite-*
+**/*.sqlite3
+**/*.db
+**/*.db-*
+**/sessions/
+**/transcripts/
+**/checkpoints/
+
+# Dependencies and generated output
+**/node_modules/
+**/dist/
+**/coverage/
+*.tsbuildinfo
+*.log
+
+# Local editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

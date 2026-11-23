@@ -1,0 +1,29 @@
+{
+  "name": "opencode-ai-development-orchestrator",
+  "version": "0.4.0",
+  "description": "OpenCode task and session orchestration plugin powered by the shared Memory Intelligence service",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "files": [
+    "index.ts",
+    "session-history.ts",
+    "README.md",
+    "smoke-test-ingest.ts"
+  ],
+  "dependencies": {
+    "@opencode/plugin": "latest",
+    "opencode-memory-intelligence-core": "^0.4.0"
+  },
+  "scripts": {
+    "test:ingest": "bun run smoke-test-ingest.ts"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "orchestration",
+    "tasks",
+    "sessions"
+  ]
+}

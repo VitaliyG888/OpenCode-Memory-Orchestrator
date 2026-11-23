@@ -1,0 +1,13 @@
+{
+  "memory": {
+    "autoSave": {
+      "enabled": true,
+      "tokenThreshold": 50000,
+      "checkOnSessionIdle": true,
+      "saveRawTranscript": true,
+      "extractNewObjects": true,
+      "estimateFallback": true,
+      "maxTranscriptCharsPerChunk": 38000
+    }
+  }
+}

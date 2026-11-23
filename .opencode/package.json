@@ -1,0 +1,10 @@
+{
+  "name": "opencode-project-plugin-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/memory-intelligence-core",
+    "plugins/memory-intelligence",
+    "plugins/ai-development-orchestrator"
+  ]
+}

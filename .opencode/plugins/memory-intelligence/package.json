@@ -1,0 +1,25 @@
+{
+  "name": "opencode-memory-intelligence",
+  "version": "0.4.0",
+  "description": "Independent OpenCode plugin exposing shared Memory Intelligence tools and lifecycle hooks",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "files": [
+    "index.ts",
+    "README.md",
+    "README_RU.md"
+  ],
+  "dependencies": {
+    "@opencode/plugin": "latest",
+    "opencode-memory-intelligence-core": "^0.4.0"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "memory",
+    "rag",
+    "knowledge-graph"
+  ]
+}

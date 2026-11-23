@@ -1,0 +1,44 @@
+{
+  "name": "opencode-memory-intelligence-core",
+  "version": "0.4.0",
+  "description": "Shared storage and public service API for OpenCode Memory Intelligence",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src/index.ts",
+    "src/client.ts",
+    "src/config.ts",
+    "src/intelligence.ts",
+    "src/schema.sql",
+    "src/store.ts",
+    "README.md",
+    "src/session-history.ts",
+    "src/session-autosave.ts",
+    "src/smoke-test-autosave.ts",
+    "src/privacy.ts",
+    "src/smoke-test-privacy.ts",
+    "src/smoke-test-vector.ts",
+    "src/smoke-test-intelligence.ts",
+    "src/smoke-test-shared-client.ts"
+  ],
+  "dependencies": {
+    "sqlite-vec": "^0.1.9"
+  },
+  "scripts": {
+    "test:vector": "bun run src/smoke-test-vector.ts",
+    "test:intelligence": "bun run src/smoke-test-intelligence.ts",
+    "test:shared-client": "bun run src/smoke-test-shared-client.ts",
+    "test:auto-save": "bun run src/smoke-test-autosave.ts",
+    "test:privacy": "bun run src/smoke-test-privacy.ts"
+  },
+  "keywords": [
+    "opencode",
+    "memory",
+    "rag",
+    "sqlite",
+    "knowledge-graph",
+    "embeddings"
+  ]
+}
