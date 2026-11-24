@@ -24,7 +24,7 @@
     "maxTranscriptChars": 45000,
     "minTranscriptChars": 300,
     "autoExtractOnCompaction": true,
-    "allowRemoteProcessing": true,
+    "allowRemoteProcessing": false,
     "apiKey": ""
   },
   "privacy": {

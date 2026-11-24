@@ -15,11 +15,11 @@ Persistent project memory and AI development orchestration for OpenCode.
 
 ## Quick installation (Windows)
 
-From the root of an existing OpenCode project, extract this repository and run:
+Keep this repository separate from the OpenCode project where you want to install the orchestrator. Open PowerShell in the extracted repository directory and run:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
-.\Install-Orchestrator.ps1
+.\Install-Orchestrator.ps1 -ProjectRoot "C:\Path\To\Your\OpenCodeProject"
 ```
 
 The installer merges missing defaults into existing configuration and backs up plugin/package directories before replacing them. It does not intentionally copy or replace the `.orchestrator` database. Review the installer and back up your project before installation or upgrades.

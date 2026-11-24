@@ -276,7 +276,23 @@ export class MemoryStore {
       supersedes_id: null, embedding_ref: null
     };
     this.db.query(`INSERT INTO memory_entries(id,project_id,session_id,task_id,kind,title,content,source,source_ref,importance,confidence,status,tags,created_at,updated_at)
-      VALUES($id,$project_id,$session_id,$task_id,$kind,$title,$content,$source,$source_ref,$importance,$confidence,$status,$tags,$created_at,$updated_at)`).run(entry);
+      VALUES($id,$project_id,$session_id,$task_id,$kind,$title,$content,$source,$source_ref,$importance,$confidence,$status,$tags,$created_at,$updated_at)`).run({
+        $id: entry.id,
+        $project_id: entry.project_id,
+        $session_id: entry.session_id,
+        $task_id: entry.task_id,
+        $kind: entry.kind,
+        $title: entry.title,
+        $content: entry.content,
+        $source: entry.source,
+        $source_ref: entry.source_ref,
+        $importance: entry.importance,
+        $confidence: entry.confidence,
+        $status: entry.status,
+        $tags: entry.tags,
+        $created_at: entry.created_at,
+        $updated_at: entry.updated_at,
+      });
     this.db.query("INSERT INTO memory_versions(id,memory_id,version,snapshot_json,reason,created_at) VALUES(?,?,?,?,?,?)")
       .run(id("ver"), memoryId, 1, json(entry), "initial", t);
     this.addNode(input.projectId, "memory", memoryId, input.title);

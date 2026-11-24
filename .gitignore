@@ -29,3 +29,19 @@
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local installer backups
+/.orchestrator-backup-*/
+
+# Local release audit artifacts
+/release-audit.patch
+/workspace1.tar.gz
+/Install-Orchestrator-v6-ready.ps1
+
+# Installer runtime files
+/.orchestrator-stage-*/
+/.orchestrator-install.lock
+
+# Installer runtime files
+/.orchestrator-stage-*/
+/.orchestrator-install.lock
