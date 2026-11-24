@@ -41,7 +41,3 @@ Thumbs.db
 # Installer runtime files
 /.orchestrator-stage-*/
 /.orchestrator-install.lock
-
-# Installer runtime files
-/.orchestrator-stage-*/
-/.orchestrator-install.lock
