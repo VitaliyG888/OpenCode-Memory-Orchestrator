@@ -383,10 +383,30 @@ export class MemoryStore {
     // which silently truncates. Allow opting into explicit truncation per provider.
     if (!isOllama && this.embeddingTruncate) body.truncate = this.embeddingTruncate;
 
-    const response = await fetch(`${this.embeddingBaseUrl.replace(/\/$/, "")}${endpoint}`, {
-      method: "POST", headers, body: JSON.stringify(body),
-      signal: AbortSignal.timeout(this.embeddingTimeoutMs)
-    });
+    const url = `${this.embeddingBaseUrl.replace(/\/$/, "")}${endpoint}`;
+    const payload = JSON.stringify(body);
+    // Hosted inference backends (NVIDIA NIM in particular) intermittently answer 5xx
+    // for a request that succeeds on the next attempt. Retry transient failures with
+    // backoff so a flaky upstream does not drop the memory from the vector index.
+    const maxAttempts = Math.max(1, Number(process.env.ORCH_EMBEDDING_RETRIES || 3));
+    const retryable = (status: number) => status === 429 || status >= 500;
+    let response: Response | null = null;
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        const candidate = await fetch(url, {
+          method: "POST", headers, body: payload,
+          signal: AbortSignal.timeout(this.embeddingTimeoutMs)
+        });
+        if (!retryable(candidate.status) || attempt === maxAttempts) { response = candidate; break; }
+        lastError = new Error(`HTTP ${candidate.status}: ${(await candidate.text()).slice(0, 300)}`);
+      } catch (error) {
+        lastError = error;
+        if (attempt === maxAttempts) throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, 400 * attempt));
+    }
+    if (!response) throw lastError instanceof Error ? lastError : new Error(String(lastError));
     if (!response.ok) throw new Error(`${this.embeddingProvider} embedding API returned HTTP ${response.status}: ${(await response.text()).slice(0, 700)}`);
     const data = await response.json() as any;
     let rawVectors: any[];
