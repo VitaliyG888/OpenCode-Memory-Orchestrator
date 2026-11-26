@@ -1,10 +1,10 @@
 import { Database } from "bun:sqlite";
-import * as sqliteVec from "sqlite-vec";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readMemoryConfig } from "./config";
 import { sanitizeSensitiveText, sanitizeSensitiveValue } from "./privacy";
+import { loadVectorExtension } from "./vector";
 
 const now = () => new Date().toISOString();
 const id = (prefix: string) => `${prefix}_${randomUUID()}`;
@@ -78,7 +78,7 @@ export class MemoryStore {
     this.db = new Database(join(this.root, "orchestrator.sqlite"), { create: true });
     this.db.exec("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;");
     try {
-      sqliteVec.load(this.db);
+      loadVectorExtension(this.db, [this.root, projectRoot]);
       this.db.query("SELECT vec_version() AS version").get();
       this.vectorAvailable = true;
     } catch (error) {

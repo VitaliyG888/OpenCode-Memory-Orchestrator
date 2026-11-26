@@ -21,7 +21,8 @@
     "src/smoke-test-privacy.ts",
     "src/smoke-test-vector.ts",
     "src/smoke-test-intelligence.ts",
-    "src/smoke-test-shared-client.ts"
+    "src/smoke-test-shared-client.ts",
+    "src/vector.ts"
   ],
   "dependencies": {
     "sqlite-vec": "^0.1.9"

@@ -270,7 +270,9 @@ bun run test:ingest
 | `.opencode/plugins/memory-intelligence` | `opencode-memory-intelligence` | OpenCode V2 plugin adapter и memory tools/hooks |
 | `.opencode/plugins/ai-development-orchestrator` | `opencode-ai-development-orchestrator` | независимый orchestration plugin, потребитель core API |
 
-Пока пакеты собраны локально и не опубликованы в npm. Перед публикацией нужно проверить имена пакетов, версию OpenCode V2, `bun pack`/`npm pack`, peer/runtime dependencies и установить именно упакованные архивы в чистый тестовый OpenCode-проект. В будущем пользовательский `opencode.json` будет содержать обе плагины:
+Пока пакеты не опубликованы в npm. Установка из упакованных архивов в чистый проект уже проверена: `bun pack` → `bun add ./tarballs/*.tgz` → оба плагина импортируются, `sqliteVecAvailable: true`, `searchMemory` возвращает результаты. Перед публикацией остаётся проверить доступность имён в npm и выполнить `npm publish` (нужна авторизация в npm).
+
+Пользовательский `opencode.json` после публикации будет содержать обе плагины:
 
 ```json
 {
@@ -282,7 +284,25 @@ bun run test:ingest
 }
 ```
 
+До публикации те же плагины можно подключить локально — путём к каталогу плагина:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    "./.opencode/plugins/memory-intelligence",
+    "./.opencode/plugins/ai-development-orchestrator"
+  ]
+}
+```
+
 Core подтягивается как зависимость обеих npm-плагин-пакетов. Его не нужно регистрировать как OpenCode plugin. Порядок публикации: сначала `opencode-memory-intelligence-core`, затем `opencode-memory-intelligence` и `opencode-ai-development-orchestrator`. Имена пакетов предварительные — доступность имён в npm нужно проверить непосредственно перед публикацией.
+
+### Как core находит `sqlite-vec`
+
+`sqlite-vec` загружается **не** через bare-импорт, а по пути к нативной библиотеке (`src/vector.ts` → `resolveVectorExtensionPath()`). Причина: загрузчик плагинов OpenCode резолвит bare-спецификаторы только относительно entrypoint плагина, поэтому `import * as sqliteVec from "sqlite-vec"` внутри вложенного пакета падает с `Cannot find package 'sqlite-vec'`, даже когда зависимость установлена.
+
+`resolveVectorExtensionPath()` обходит `node_modules` вверх по дереву от каталога пакета, корня проекта и `process.cwd()`, а также проверяет Bun-хранилище `node_modules/.bun/<pkg>@<version>/`. Найденный файл (`vec0.dll` / `vec0.dylib` / `vec0.so`) передаётся в `db.loadExtension()`. Bundling-шаг не требуется: достаточно обычного `bun install`. Если библиотека не найдена, `vectorAvailable` остаётся `false`, а семантический поиск деградирует до FTS + графа (`embeddingWarning` содержит причину) — плагин при этом продолжает работать.
 
 Для отдельного проекта, которому нужна только общая память, в `opencode.json` достаточно зарегистрировать один plugin:
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Fixed: plugins no longer fail with `Cannot find package 'sqlite-vec'` when loaded by OpenCode. The core package resolves the native extension by filesystem path (`src/vector.ts`) instead of a bare `import`.
+- Verified clean install: `bun pack` → `bun add ./tarballs/*.tgz` in an empty project loads both plugins with `sqliteVecAvailable: true` and working `searchMemory`.
+- Added `.opencode/opencode.jsonc` declaring both local plugins, plus documented local-path and published-package variants in `README_RU.md`.
+
 ## 0.4.0
 
 - Two independent OpenCode V2 plugins.
