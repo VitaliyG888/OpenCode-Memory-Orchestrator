@@ -1,7 +1,34 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 type JsonObject = Record<string, any>;
+
+/**
+ * Locate the nearest directory that owns an .opencode config folder.
+ * Stores opened on a throwaway data root (tests, temp projects) still need the
+ * real provider configuration, so walk upward instead of failing silently.
+ */
+function findConfigRoot(start: string): string | null {
+  let dir = resolve(start);
+  for (let depth = 0; depth < 12; depth += 1) {
+    const configDir = join(dir, ".opencode");
+    if (existsSync(join(configDir, "memory.config.json")) || existsSync(join(configDir, "orchestrator.config.json"))) {
+      return dir;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+/** Roots to consult: the data root first, then the discovered project root. */
+function configRoots(projectRoot: string): string[] {
+  const roots = [projectRoot];
+  const discovered = findConfigRoot(projectRoot) || findConfigRoot(process.cwd());
+  if (discovered && resolve(discovered) !== resolve(projectRoot)) roots.push(discovered);
+  return roots;
+}
 
 function deepMerge(base: JsonObject, override: JsonObject): JsonObject {
   const result: JsonObject = { ...base };
@@ -21,8 +48,9 @@ function deepMerge(base: JsonObject, override: JsonObject): JsonObject {
  * git-ignored file and never in committed config. Values are never logged.
  */
 export function loadProjectEnv(projectRoot: string): void {
+  for (const root of configRoots(projectRoot)) {
   for (const name of [".env", join(".opencode", ".env")]) {
-    const file = join(projectRoot, name);
+    const file = join(root, name);
     if (!existsSync(file)) continue;
     let text = "";
     try { text = readFileSync(file, "utf8"); } catch { continue; }
@@ -41,11 +69,14 @@ export function loadProjectEnv(projectRoot: string): void {
       if (process.env[key] === undefined) process.env[key] = value;
     }
   }
+  }
 }
 
 /** Canonical Memory Intelligence config with backwards-compatible legacy fallback. */
 export function readMemoryConfig(projectRoot: string): JsonObject {
-  const configDir = join(projectRoot, ".opencode");
+  const roots = configRoots(projectRoot);
+  const baseRoot = roots[roots.length - 1];
+  const configDir = join(baseRoot, ".opencode");
   const legacyPath = join(configDir, "orchestrator.config.json");
   const canonicalPath = join(configDir, "memory.config.json");
   const read = (path: string): JsonObject => {
