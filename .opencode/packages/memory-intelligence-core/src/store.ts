@@ -2,7 +2,7 @@ import { Database } from "bun:sqlite";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { readMemoryConfig } from "./config";
+import { loadProjectEnv, readMemoryConfig } from "./config";
 import { sanitizeSensitiveText, sanitizeSensitiveValue } from "./privacy";
 import { loadVectorExtension } from "./vector";
 
@@ -31,11 +31,13 @@ export class MemoryStore {
   embeddingDimensions: number | undefined;
   embeddingInputTypeQuery: string | undefined;
   embeddingInputTypeDocument: string | undefined;
+  embeddingTruncate: string | undefined;
   deduplicationEnabled = true;
   deduplicationSimilarityThreshold = 0.92;
   privacyOptions = { redactCredentials: true, redactPrivateTags: true };
 
   constructor(projectRoot: string) {
+    loadProjectEnv(projectRoot);
     const fileConfig = readMemoryConfig(projectRoot);
     const embedding = fileConfig.embedding || {};
     const providers = fileConfig.providers || {};
@@ -48,10 +50,12 @@ export class MemoryStore {
       redactPrivateTags: String(privacy.redactPrivateTags ?? true) !== "false",
     };
     this.embeddingProvider = (process.env.ORCH_EMBEDDING_PROVIDER || embedding.provider || "openrouter") as any;
-    this.embeddingModel = process.env.ORCH_EMBEDDING_MODEL || embedding.model ||
+    const envModel = embedding.modelEnv ? process.env[String(embedding.modelEnv)] : undefined;
+    const envBaseUrl = embedding.baseUrlEnv ? process.env[String(embedding.baseUrlEnv)] : undefined;
+    this.embeddingModel = process.env.ORCH_EMBEDDING_MODEL || envModel || embedding.model ||
       (this.embeddingProvider === "ollama" ? "embeddinggemma" : "qwen/qwen3-embedding-8b");
     this.embeddingBaseUrl = process.env.ORCH_EMBEDDING_BASE_URL ||
-      process.env.ORCH_OLLAMA_URL || embedding.baseUrl ||
+      process.env.ORCH_OLLAMA_URL || envBaseUrl || embedding.baseUrl ||
       (this.embeddingProvider === "ollama" ? "http://127.0.0.1:11434" : "https://openrouter.ai/api/v1");
     this.embeddingApiKeyEnv = process.env.ORCH_EMBEDDING_API_KEY_ENV || embedding.apiKeyEnv ||
       (this.embeddingProvider === "openrouter" ? "OPENROUTER_API_KEY" : "OPENAI_API_KEY");
@@ -69,6 +73,7 @@ export class MemoryStore {
     this.embeddingDimensions = Number(process.env.ORCH_EMBEDDING_DIMENSIONS || embedding.dimensions) || undefined;
     this.embeddingInputTypeQuery = embedding.inputTypeQuery;
     this.embeddingInputTypeDocument = embedding.inputTypeDocument;
+    this.embeddingTruncate = process.env.ORCH_EMBEDDING_TRUNCATE || embedding.truncate;
     if (!["openrouter", "openai-compatible", "ollama"].includes(this.embeddingProvider)) {
       throw new Error(`Unsupported embedding provider: ${this.embeddingProvider}`);
     }
@@ -374,6 +379,9 @@ export class MemoryStore {
     if (!isOllama && this.embeddingDimensions) body.dimensions = this.embeddingDimensions;
     const inputType = purpose === "query" ? this.embeddingInputTypeQuery : this.embeddingInputTypeDocument;
     if (!isOllama && inputType) body.input_type = inputType;
+    // NVIDIA NIM rejects over-long input when truncate=NONE (its default), unlike OpenRouter
+    // which silently truncates. Allow opting into explicit truncation per provider.
+    if (!isOllama && this.embeddingTruncate) body.truncate = this.embeddingTruncate;
 
     const response = await fetch(`${this.embeddingBaseUrl.replace(/\/$/, "")}${endpoint}`, {
       method: "POST", headers, body: JSON.stringify(body),

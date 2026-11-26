@@ -35,6 +35,7 @@ function redactCredentials(input: string): string {
   text = text.replace(/-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/gi, "[REDACTED_PRIVATE_KEY]");
   // Provider and source-control tokens.
   text = text.replace(/\bsk-or-v1-[A-Za-z0-9_-]{16,}\b/g, "[REDACTED_OPENROUTER_KEY]");
+  text = text.replace(/\bnvapi-[A-Za-z0-9_-]{16,}\b/g, "[REDACTED_NVIDIA_KEY]");
   text = text.replace(/\bsk-ant-[A-Za-z0-9_-]{16,}\b/g, "[REDACTED_ANTHROPIC_KEY]");
   text = text.replace(/\bsk-[A-Za-z0-9_-]{24,}\b/g, "[REDACTED_API_KEY]");
   text = text.replace(/\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}\b/g, "[REDACTED_GITHUB_TOKEN]");

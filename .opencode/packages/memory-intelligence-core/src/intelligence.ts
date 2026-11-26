@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { MemoryStore } from "./store";
-import { readMemoryConfig } from "./config";
+import { loadProjectEnv, readMemoryConfig } from "./config";
 import { sanitizeSensitiveText, sanitizeSensitiveValue } from "./privacy";
 
 const isoNow = () => new Date().toISOString();
@@ -68,16 +68,22 @@ export class MemoryIntelligence {
   minTranscriptChars = 300;
   autoExtractOnCompaction = true;
   allowRemoteProcessing = true;
+  structuredOutputMode: "json_object" | "none" = "json_object";
 
   constructor(projectRoot: string, store: MemoryStore) {
     this.store = store;
+    loadProjectEnv(projectRoot);
     const fileConfig = readMemoryConfig(projectRoot);
     const cfg = fileConfig.intelligence || {};
     const providers = fileConfig.providers || {};
     this.enabled = String(process.env.ORCH_INTELLIGENCE_ENABLED ?? cfg.enabled ?? true) !== "false";
     this.provider = process.env.ORCH_INTELLIGENCE_PROVIDER || cfg.provider || "openrouter";
-    this.baseUrl = process.env.ORCH_INTELLIGENCE_BASE_URL || cfg.baseUrl || "https://openrouter.ai/api/v1";
-    this.model = process.env.ORCH_INTELLIGENCE_MODEL || cfg.model || "google/gemini-3.6-flash";
+    // Resolve model/base URL from .env variable NAMES declared in config,
+    // so credentials and endpoints live only in the git-ignored .env file.
+    const envModel = cfg.modelEnv ? process.env[String(cfg.modelEnv)] : undefined;
+    const envBaseUrl = cfg.baseUrlEnv ? process.env[String(cfg.baseUrlEnv)] : undefined;
+    this.baseUrl = process.env.ORCH_INTELLIGENCE_BASE_URL || envBaseUrl || cfg.baseUrl || "https://openrouter.ai/api/v1";
+    this.model = process.env.ORCH_INTELLIGENCE_MODEL || envModel || cfg.model || "google/gemini-3.6-flash";
     this.apiKeyEnv = process.env.ORCH_INTELLIGENCE_API_KEY_ENV || cfg.apiKeyEnv || "OPENROUTER_API_KEY";
     const sectionApiKey = typeof cfg.apiKey === "string" ? cfg.apiKey.trim() : "";
     const providerApiKey = typeof providers?.[this.provider]?.apiKey === "string"
@@ -92,6 +98,10 @@ export class MemoryIntelligence {
     this.minTranscriptChars = Math.min(Math.max(Number(cfg.minTranscriptChars || 300), 50), 5000);
     this.autoExtractOnCompaction = String(cfg.autoExtractOnCompaction ?? true) !== "false";
     this.allowRemoteProcessing = String(cfg.allowRemoteProcessing ?? true) !== "false";
+    // NVIDIA's hosted endpoint returns empty content for response_format=json_object,
+    // so allow disabling it and relying on the prompt plus JSON extraction instead.
+    const structured = String(process.env.ORCH_INTELLIGENCE_STRUCTURED_OUTPUT || cfg.structuredOutput || "json_object");
+    this.structuredOutputMode = structured === "none" ? "none" : "json_object";
     if (!new Set(["openrouter", "openai-compatible"]).has(this.provider)) {
       throw new Error(`Unsupported intelligence provider: ${this.provider}`);
     }
@@ -119,7 +129,8 @@ export class MemoryIntelligence {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({ model: this.model, temperature: 0.1, max_tokens: 12000,
-        response_format: { type: "json_object" }, messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
+        ...(this.structuredOutputMode === "json_object" ? { response_format: { type: "json_object" } } : {}),
+        messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
       signal: AbortSignal.timeout(this.timeoutMs)
     });
     if (!response.ok) throw new Error(`${this.provider} intelligence API returned HTTP ${response.status}: ${(await response.text()).slice(0, 900)}`);
@@ -143,7 +154,8 @@ export class MemoryIntelligence {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({ model: this.model, temperature: 0.1, max_tokens: 10000,
-        response_format: { type: "json_object" }, messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
+        ...(this.structuredOutputMode === "json_object" ? { response_format: { type: "json_object" } } : {}),
+        messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
       signal: AbortSignal.timeout(this.timeoutMs)
     });
     if (!response.ok) throw new Error(`${this.provider} task-planning API returned HTTP ${response.status}: ${(await response.text()).slice(0, 900)}`);

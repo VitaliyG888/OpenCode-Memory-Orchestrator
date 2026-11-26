@@ -15,6 +15,34 @@ function deepMerge(base: JsonObject, override: JsonObject): JsonObject {
   return result;
 }
 
+/**
+ * Load project-root .env into process.env without overwriting existing values.
+ * The plugin host may not load .env itself, so this keeps credentials in one
+ * git-ignored file and never in committed config. Values are never logged.
+ */
+export function loadProjectEnv(projectRoot: string): void {
+  for (const name of [".env", join(".opencode", ".env")]) {
+    const file = join(projectRoot, name);
+    if (!existsSync(file)) continue;
+    let text = "";
+    try { text = readFileSync(file, "utf8"); } catch { continue; }
+    for (const rawLine of text.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+      const eq = line.indexOf("=");
+      if (eq <= 0) continue;
+      const key = line.slice(0, eq).trim().replace(/^export\s+/, "");
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) continue;
+      let value = line.slice(eq + 1).trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (!value) continue;
+      if (process.env[key] === undefined) process.env[key] = value;
+    }
+  }
+}
+
 /** Canonical Memory Intelligence config with backwards-compatible legacy fallback. */
 export function readMemoryConfig(projectRoot: string): JsonObject {
   const configDir = join(projectRoot, ".opencode");
